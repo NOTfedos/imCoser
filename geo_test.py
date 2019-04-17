@@ -19,7 +19,7 @@ sessionStorage = {}
 # 2 - навык показывает картинку
 # 3 - игрок отгадывает, навык ждет ответа
 # 4 - навык на паузе
-difs = ["легко", "средне", "тяжело"]
+difs = ["легко", "средне", "сложно"]
 
 
 @app.route('/post', methods=['POST'])
@@ -32,14 +32,16 @@ def main():
             'end_session': False
         }
     }
-    handle_dialog(response, request.json)
+    try:
+        handle_dialog(response, request.json)
+    except Exception as e:
+        traceback.print_exc()
     logging.info('Request: %r', response)
     return json.dumps(response)
 
 
 def handle_dialog(res, req):
     user_id = req['session']['user_id']
-
     # Если новый пользователь
     if req['session']['new']:
         res['response']['text'] = \
@@ -92,7 +94,7 @@ def handle_dialog(res, req):
 
         # Если навык должен показывать картинку
         if sessionStorage[user_id]['stage'] == 2:
-            correct = choice(geobjs[sessionStorage[user_id]['difficulty']].keys())
+            correct = choice(list(geobjs[sessionStorage[user_id]['difficulty']].keys()))
 
             res['response']['buttons'] = [
                 {'title': 'Пропустить', 'hide': True},
@@ -198,7 +200,8 @@ def handle_dialog(res, req):
             'результаты',
             'мои результаты',
             'статистика',
-            'моя статистика'
+            'моя статистика',
+            'показать свои результаты'
         ]:
             res['response']['text'] = get_stats(sessionStorage[user_id])
             return
@@ -209,8 +212,31 @@ def handle_dialog(res, req):
             'начать тест',
             'старт',
         ]:
-            sessionStorage[user_id]['stage'] = 2
-            sessionStorage[user_id]['ingame'] = True
+            try:
+                # print(geobjs[sessionStorage[user_id]['difficulty']])
+                # print(geobjs[sessionStorage[user_id]['difficulty']].keys())
+                correct = choice(list(geobjs[sessionStorage[user_id]['difficulty']].keys()))
+                res['response']['buttons'] = [
+                    {'title': 'Пропустить', 'hide': True},
+                    {'title': 'Показать еще раз', 'hide': True},
+                    {'title': 'пауза', 'hide': True}
+                ]
+                res['response']['text'] = \
+                    'Тут должна быть картинка'
+                res['response']['card'] = {
+                    'type': 'BigImage',
+                    'image_id': geobjs[sessionStorage[user_id]['difficulty']][correct]
+                }
+                # res['response']['card']['type'] = 'BigImage'
+                # res['response']['card']['image_id'] = geobjs[sessionStorage[user_id]['difficulty']][correct]
+
+                sessionStorage[user_id]['stage'] = 3
+                sessionStorage[user_id]['correct'] = correct
+                sessionStorage[user_id]['ticks'] += 1
+                sessionStorage[user_id]['ingame'] = True
+            except Exception as e:
+                traceback.print_exc()
+                res['response']['text'] = str(e)
             return
 
         # Если пользователь хочет сменить уровень сложности
@@ -221,6 +247,11 @@ def handle_dialog(res, req):
             except ValueError:
                 res['response']['text'] = 'Доступно: легко, средне и сложно'
                 sessionStorage[user_id]['stage'] = 1
+                res['response']['buttons'] = [
+                    {'title': 'Легко', 'hide': True},
+                    {'title': 'Средне', 'hide': True},
+                    {'title': 'Сложно', 'hide': True}
+                ]
                 return
             res['response']['text'] = 'Вы успешно сменили уровень сложности на {}'.format(
                 difs[sessionStorage[user_id]['difficulty']]
@@ -230,7 +261,12 @@ def handle_dialog(res, req):
 
 # Загрузка объектов из файла
 def load_geo():
-    return None
+    geo = [
+        {'Москва': "965417/7b6365f3876c1291d491"},
+        {'Москва': "965417/7b6365f3876c1291d491"},
+        {'Москва': "965417/7b6365f3876c1291d491"}
+    ]
+    return geo
 
 
 # Получение результатов пользователя
