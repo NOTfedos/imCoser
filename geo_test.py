@@ -2,6 +2,7 @@ from flask import Flask, request
 import logging
 import json
 from random import choice
+import traceback
 
 
 app = Flask(__name__)
@@ -50,12 +51,15 @@ def handle_dialog(res, req):
             {'title': 'Сложно', 'hide': True}
         ]
 
-        sessionStorage[user_id]['stage'] = 1
-        sessionStorage[user_id]['good_ans'] = 0
-        sessionStorage[user_id]['ticks'] = 0
-        sessionStorage[user_id]['skip_ans'] = 0
-        sessionStorage[user_id]['difficulty'] = None
-        sessionStorage[user_id]['ingame'] = False
+        sessionStorage[user_id] = {
+            'stage': 1,
+            'good_ans': 0,
+            'ticks': 0,
+            'skip_ans': 0,
+            'difficulty': 1,
+            'ingame': False
+        }
+
         return
 
     # Если пользователь выбирает уровень сложности
@@ -76,6 +80,11 @@ def handle_dialog(res, req):
         res['response']['text'] = 'Успешно установлен уровень сложности: {}'.format(
             req['request']['original_utterance'].lower())
         sessionStorage[user_id]['stage'] = 4
+        res['response']['buttons'] = [
+            {'title': 'Начать тест', 'hide': True},
+            {'title': 'Сменить уровень сложности', 'hide': True},
+            {'title': 'Показать свои результаты', 'hide': True}
+        ]
         return
 
     # Если пользователь в процессе тестирования
