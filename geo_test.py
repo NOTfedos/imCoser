@@ -21,6 +21,17 @@ sessionStorage = {}
 # 4 - навык на паузе
 difs = ["легко", "средне", "сложно"]
 
+# Загрузка объектов из файла
+def load_geo():
+    geo = [
+        {'Москва': "965417/7b6365f3876c1291d491"},
+        {'Москва': "965417/7b6365f3876c1291d491"},
+        {'Москва': "965417/7b6365f3876c1291d491"}
+    ]
+    return geo
+
+geobjs = load_geo()
+
 
 @app.route('/post', methods=['POST'])
 def main():
@@ -41,6 +52,7 @@ def main():
 
 
 def handle_dialog(res, req):
+    global geobjs
     user_id = req['session']['user_id']
     # Если новый пользователь
     if req['session']['new']:
@@ -121,6 +133,11 @@ def handle_dialog(res, req):
                     'Не надо отчаиваться, в следующий раз повезёт!'
                 sessionStorage[user_id]['skip_ans'] += 1
                 sessionStorage[user_id]['stage'] = 2
+                res['response']['buttons'] = [
+                    {'title': 'Пропустить', 'hide': True},
+                    {'title': 'Показать еще раз', 'hide': True},
+                    {'title': 'пауза', 'hide': True}
+                ]
                 return
 
             # Если пользователь хочет снова увидеть картинку объекта
@@ -131,6 +148,11 @@ def handle_dialog(res, req):
                 res['response']['card']['type'] = 'BigImage'
                 res['response']['card']['image_id'] = geobjs[sessionStorage[user_id]['difficulty']][
                     sessionStorage[user_id]['correct']]
+                res['response']['buttons'] = [
+                    {'title': 'Пропустить', 'hide': True},
+                    {'title': 'Показать еще раз', 'hide': True},
+                    {'title': 'пауза', 'hide': True}
+                ]
                 return
 
             # Если пользователь хочет сменить уровень сложности
@@ -259,21 +281,14 @@ def handle_dialog(res, req):
             sessionStorage[user_id]['stage'] = 4
             return
 
-# Загрузка объектов из файла
-def load_geo():
-    geo = [
-        {'Москва': "965417/7b6365f3876c1291d491"},
-        {'Москва': "965417/7b6365f3876c1291d491"},
-        {'Москва': "965417/7b6365f3876c1291d491"}
-    ]
-    return geo
-
 
 # Получение результатов пользователя
 def get_stats(user):
     return 'результаты'
 
+# Показ спутникового снимка
+def display(userStorage, res):
+    pass
 
 if __name__ == '__main__':
-    geobjs = load_geo()
     app.run()
