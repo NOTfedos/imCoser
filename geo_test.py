@@ -47,7 +47,7 @@ def handle_dialog(res, req):
         res['response']['buttons'] = [
             {'title': 'Легко', 'hide': True},
             {'title': 'Средне', 'hide': True},
-            {'title': 'Тяжело', 'hide': True}
+            {'title': 'Сложно', 'hide': True}
         ]
 
         sessionStorage[user_id]['stage'] = 1
@@ -55,6 +55,27 @@ def handle_dialog(res, req):
         sessionStorage[user_id]['ticks'] = 0
         sessionStorage[user_id]['skip_ans'] = 0
         sessionStorage[user_id]['difficulty'] = None
+        sessionStorage[user_id]['ingame'] = False
+        return
+
+    # Если пользователь выбирает уровень сложности
+    if sessionStorage[user_id]['stage'] == 1:
+        # Если ответ пользователь это НЕ уровень сложности
+        if not req['request']['original_utterance'].lower() in difs:
+            res['response']['text'] = \
+                '''Выбери уровень сложности, это пригодится (имеется "легко", "средне" и "сложно")'''
+            res['response']['buttons'] = [
+                {'title': 'Легко', 'hide': True},
+                {'title': 'Средне', 'hide': True},
+                {'title': 'Сложно', 'hide': True}
+            ]
+            return
+
+        # Если ответ - это выбранный уровень сложности
+        sessionStorage[user_id]['difficulty'] = difs.index(req['request']['original_utterance'].lower())
+        res['response']['text'] = 'Успешно установлен уровень сложности: {}'.format(
+            req['request']['original_utterance'].lower())
+        sessionStorage[user_id]['stage'] = 4
         return
 
     # Если пользователь в процессе тестирования
@@ -64,11 +85,16 @@ def handle_dialog(res, req):
         if sessionStorage[user_id]['stage'] == 2:
             correct = choice(geobjs[sessionStorage[user_id]['difficulty']].keys())
 
+            res['response']['buttons'] = [
+                {'title': 'Пропустить', 'hide': True},
+                {'title': 'Показать еще раз', 'hide': True},
+                {'title': 'пауза', 'hide': True}
+            ]
             res['response']['text'] = \
                 'Тут должна быть картинка'
             res['response']['card'] = {}
             res['response']['card']['type'] = 'BigImage'
-            res['response']['card']['image_id'] = geobjs[correct]
+            res['response']['card']['image_id'] = geobjs[sessionStorage[user_id]['difficulty']][correct]
 
             sessionStorage[user_id]['stage'] = 3
             sessionStorage[user_id]['correct'] = correct
@@ -76,54 +102,85 @@ def handle_dialog(res, req):
             return
 
         # Если пользователь должен отгадывать
+        if sessionStorage[user_id]['stage'] == 3:
 
-    # Если пользователь выбирает уровень сложности
-    if sessionStorage[user_id]['stage'] == 1:
-        # Если ответ пользователь это НЕ уровень сложности
-        if not req['request']['original_utterance'].lower() in difs:
-            res['response']['text'] = \
-                '''Выбери уровень сложности, это пригодится (имеется "легко", "средне" и "тяжело")'''
-            res['response']['buttons'] = [
-                {'title': 'Легко', 'hide': True},
-                {'title': 'Средне', 'hide': True},
-                {'title': 'Тяжело', 'hide': True}
-            ]
-            sessionStorage[user_id]['ingame'] = True
-            return
+            # Если пользователь хочет пропустить объект
+            if req['request']['original_utterance'].lower() == 'пропустить':
+                res['response']['text'] = \
+                    'Не надо отчаиваться, в следующий раз повезёт!'
+                sessionStorage[user_id]['skip_ans'] += 1
+                sessionStorage[user_id]['stage'] = 2
+                return
 
-        # Если ответ - это выбранный уровень сложности
-        sessionStorage[user_id]['difficulty'] = difs.index(req['request']['original_utterance'].lower())
-        res['response']['text'] = 'Успешно установлен уровень сложности: {}'.format(
-            req['request']['original_utterance'].lower())
-        sessionStorage[user_id]['stage'] = 2
+            # Если пользователь хочет снова увидеть картинку объекта
+            if 'показать' in req['request']['original_utterance'].lower():
+                res['response']['text'] = \
+                    'Тут должна быть картинка'
+                res['response']['card'] = {}
+                res['response']['card']['type'] = 'BigImage'
+                res['response']['card']['image_id'] = geobjs[sessionStorage[user_id]['difficulty']][
+                    sessionStorage[user_id]['correct']]
+                return
 
-    # Обрабатываем ответ пользователя
-    if sessionStorage[user_id]['stage'] == 3:
-        # Если пользователь хочет пропустить объект
-        if req['request']['original_utterance'].lower() == 'пропустить':
-            res['response']['text'] = \
-                'Не надо отчаиваться, в следующий раз повезёт!'
-            sessionStorage[user_id]['skip_ans'] += 1
-            sessionStorage[user_id]['stage'] = 2
-            return
+            # Если пользователь хочет сменить уровень сложности
+            if req['request']['original_utterance'].lower().startswith('сменить уровень сложности'):
+                try:
+                    sessionStorage[user_id]['difficulty'] = difs.index(
+                        req['request']['original_utterance'].lower().split()[-1])
+                except ValueError:
+                    res['response']['text'] = 'Доступно: легко, средне и сложно'
+                    sessionStorage[user_id]['stage'] = 1
+                    return
+                res['response']['text'] = 'Вы успешно сменили уровень сложности на {}'.format(
+                    difs[sessionStorage[user_id]['difficulty']]
+                )
+                sessionStorage[user_id]['ticks'] -= 1
+                sessionStorage[user_id]['stage'] = 2
+                return
 
-        # Если пользователь хочет снова увидеть картинку объекта
-        if 'показать' in req['request']['original_utterance'].lower():
-            res['response']['text'] = \
-                'Тут должна быть картинка'
-            res['response']['card'] = {}
-            res['response']['card']['type'] = 'BigImage'
-            res['response']['card']['image_id'] = geobjs[sessionStorage[user_id]['correct']]
-            return
+            # Если пользователь хочет приостановить тест
+            if req['request']['original_utterance'].lower() in [
+                'пауза',
+                'приостановить',
+                'остановить'
+            ]:
+                sessionStorage[user_id]['ingame'] = False
+                sessionStorage[user_id]['ticks'] -= 1
+                sessionStorage[user_id]['stage'] = 4
+                res['response']['buttons'] = [
+                    {'title': 'Начать тест', 'hide': True},
+                    {'title': 'Сменить уровень сложности', 'hide': True},
+                    {'title': 'Показать свои результаты', 'hide': True}
+                ]
+                return
 
-        # Если пользователь хочет сменить уровень сложности
-        if req['request']['original_utterance'].lower().startswith('сменить уровень сложности'):
-            sessionStorage[user_id]['difficulty'] = difs.index(req['request']['original_utterance'].lower().split()[-1])
-            res['response']['text'] = 'Вы успешно сменили уровень сложности на {}'.format(
-                difs[sessionStorage[user_id]['difficulty']]
-            )
-            sessionStorage[user_id]['ticks'] -= 1
-            sessionStorage[user_id]['stage'] = 2
+            # Если ответ правильный, то продолжаем тест
+            if req['request']['original_utterance'].lower() == sessionStorage[user_id]['correct']:
+                res['response']['text'] = \
+                    'Правильный ответ!'
+                sessionStorage[user_id]['good_ans'] += 1
+                sessionStorage[user_id]['stage'] = 2
+                return
+            else:
+                res['response']['text'] = \
+                    'Ответ неверный, попробуйте еще раз'
+                res['response']['buttons'] = [
+                    {'title': 'Пропустить', 'hide': True},
+                    {'title': 'Показать еще раз', 'hide': True},
+                ]
+                if sessionStorage[user_id]['difficulty'] == 1:
+                    res['response']['buttons'].append({'title': 'Сменить уровень сложности на Легко', 'hide': True})
+                if sessionStorage[user_id]['difficulty'] == 2:
+                    res['response']['buttons'].append({'title': 'Сменить уровень сложности на Средне', 'hide': True})
+                return
+
+    else:  # Если пользователь не в процессе тестирования
+
+        res['response']['buttons'] = [
+            {'title': 'Начать тест', 'hide': True},
+            {'title': 'Сменить уровень сложности', 'hide': True},
+            {'title': 'Показать свои результаты', 'hide': True}
+        ]
 
         # Если пользователь хочет увидеть свои результаты
         if req['request']['original_utterance'].lower() in [
@@ -135,36 +192,41 @@ def handle_dialog(res, req):
             'моя статистика'
         ]:
             res['response']['text'] = get_stats(sessionStorage[user_id])
+            return
 
-        # Если ответ правильный, то продолжаем тест
-        if req['request']['original_utterance'].lower() == sessionStorage[user_id]['correct']:
-            res['response']['text'] = \
-                'Правильный ответ!'
-            sessionStorage[user_id]['good_ans'] += 1
+        # Если пользователь хочет начать тест
+        if req['request']['original_utterance'].lower() in [
+            'начать',
+            'начать тест',
+            'старт',
+        ]:
             sessionStorage[user_id]['stage'] = 2
-            return
-        else:
-            res['response']['text'] = \
-                'Ответ неверный, попробуйте еще раз'
-            res['response']['buttons'] = [
-                {'title': 'Пропустить', 'hide': True},
-                {'title': 'Показать еще раз', 'hide': True},
-            ]
-            if sessionStorage[user_id]['difficulty'] == 1:
-                res['response']['buttons'].append({'title': 'Сменить уровень сложности на Легко', 'hide': True})
-            if sessionStorage[user_id]['difficulty'] == 2:
-                res['response']['buttons'].append({'title': 'Сменить уровень сложности на Средне', 'hide': True})
+            sessionStorage[user_id]['ingame'] = True
             return
 
+        # Если пользователь хочет сменить уровень сложности
+        if req['request']['original_utterance'].lower().startswith('сменить уровень сложности'):
+            try:
+                sessionStorage[user_id]['difficulty'] = difs.index(
+                    req['request']['original_utterance'].lower().split()[-1])
+            except ValueError:
+                res['response']['text'] = 'Доступно: легко, средне и сложно'
+                sessionStorage[user_id]['stage'] = 1
+                return
+            res['response']['text'] = 'Вы успешно сменили уровень сложности на {}'.format(
+                difs[sessionStorage[user_id]['difficulty']]
+            )
+            sessionStorage[user_id]['stage'] = 4
+            return
 
 # Загрузка объектов из файла
 def load_geo():
-    pass
+    return None
 
 
 # Получение результатов пользователя
 def get_stats(user):
-    pass
+    return 'результаты'
 
 
 if __name__ == '__main__':
