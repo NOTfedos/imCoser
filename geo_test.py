@@ -193,6 +193,8 @@ def handle_dialog(res, req):
                     'Правильный ответ!'
                 sessionStorage[user_id]['good_ans'] += 1
                 sessionStorage[user_id]['stage'] = 2
+                correct = get_obj(geobjs, sessionStorage[user_id])
+                res = display(sessionStorage[user_id], res, correct)
                 return
             else:
                 res['response']['text'] = \
@@ -238,17 +240,7 @@ def handle_dialog(res, req):
                 # print(geobjs[sessionStorage[user_id]['difficulty']])
                 # print(geobjs[sessionStorage[user_id]['difficulty']].keys())
                 correct = choice(list(geobjs[sessionStorage[user_id]['difficulty']].keys()))
-                res['response']['buttons'] = [
-                    {'title': 'Пропустить', 'hide': True},
-                    {'title': 'Показать еще раз', 'hide': True},
-                    {'title': 'пауза', 'hide': True}
-                ]
-                res['response']['text'] = \
-                    'Тут должна быть картинка'
-                res['response']['card'] = {
-                    'type': 'BigImage',
-                    'image_id': geobjs[sessionStorage[user_id]['difficulty']][correct]
-                }
+                res = display(sessionStorage[user_id], res, correct)
                 # res['response']['card']['type'] = 'BigImage'
                 # res['response']['card']['image_id'] = geobjs[sessionStorage[user_id]['difficulty']][correct]
 
@@ -287,7 +279,21 @@ def get_stats(user):
     return 'результаты'
 
 # Показ спутникового снимка
-def display(userStorage, res):
+def display(userStorage, res, correct):
+    res['response']['buttons'] = [
+        {'title': 'Пропустить', 'hide': True},
+        {'title': 'Показать еще раз', 'hide': True},
+        {'title': 'Пауза', 'hide': True}
+    ]
+    res['response']['text'] = \
+        'Тут должна быть картинка'
+    res['response']['card'] = {
+        'type': 'BigImage',
+        'image_id': geobjs[userStorage['difficulty']][correct]
+    }
+    return res
+
+def get_obj(obj_list, userStorage):
     pass
 
 if __name__ == '__main__':
