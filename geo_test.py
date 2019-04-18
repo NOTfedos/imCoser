@@ -280,7 +280,12 @@ def handle_dialog(res, req):
 
 # Получение результатов пользователя
 def get_stats(userStorage):
-    return 'результаты'
+    return '''Ваши результаты:
+                Всего вопросов: {}
+                Правильных ответов: {}
+                Процент выполнения: {}
+    '''.format(str(userStorage['ticks']), str(userStorage['good_ans']),
+               str(round(userStorage['good_ans'] * 100 / userStorage['ticks'], 3)))
 
 
 '''# Формирования вопроса теста
