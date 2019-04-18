@@ -3,6 +3,7 @@ import logging
 import json
 from random import choice
 import traceback
+import os
 
 
 app = Flask(__name__)
@@ -24,6 +25,9 @@ difs = ["легко", "средне", "сложно"]
 
 # Загрузка объектов из файла
 def load_geo():
+    path = os.path.join(os.getcwd(), 'Samples', 'geodata.dat')
+    f = open(path, mode='r')
+    dat = f.read()
     geo = [
         {'Москва': "965417/7b6365f3876c1291d491"},
         {'Москва': "965417/7b6365f3876c1291d491"},
