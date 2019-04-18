@@ -75,7 +75,8 @@ def handle_dialog(res, req):
             'difficulty': 1,
             'ingame': False,
             'correct': None,
-            'image_id': None
+            'image_id': None,
+            'shown': []
         }
 
         return
@@ -313,10 +314,13 @@ def display(res, userStorage):
 
 
 def get_obj(obj_list, userStorage):
-    correct = None
-    # corr = choice(list(geobjs[sessionStorage[user_id]['difficulty']].keys()))
-    image_id = None
-    return correct, image_id
+    corr = choice(list(geobjs[userStorage['difficulty']].keys()))
+    image_id = geobjs[userStorage['difficulty']][corr]
+    while image_id in userStorage['shown']:
+        corr = choice(list(geobjs[userStorage['difficulty']].keys()))
+        image_id = geobjs[userStorage['difficulty']][corr]
+    userStorage['shown'].append(image_id)
+    return corr, image_id
 
 
 if __name__ == '__main__':
