@@ -317,13 +317,17 @@ def display(res, userStorage):
     return res
 
 
+# Формирование новой картинки теста
 def get_obj(obj_list, userStorage):
     corr = choice(list(geobjs[userStorage['difficulty']].keys()))
     image_id = geobjs[userStorage['difficulty']][corr]
+
     while image_id in userStorage['shown']:
         corr = choice(list(geobjs[userStorage['difficulty']].keys()))
         image_id = geobjs[userStorage['difficulty']][corr]
+
     userStorage['shown'].append(image_id)
+
     return corr, image_id
 
 
