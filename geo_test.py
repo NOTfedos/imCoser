@@ -60,11 +60,14 @@ def main():
 def handle_dialog(res, req):
     global geobjs
     user_id = req['session']['user_id']
+
     # Если новый пользователь
     if req['session']['new']:
+
         res['response']['text'] = \
             'Привет! Я могу протестировать тебя по географии!' \
             'Выбери уровень сложности'
+
         res['response']['buttons'] = [
             {'title': 'Легко', 'hide': True},
             {'title': 'Средне', 'hide': True},
@@ -102,7 +105,9 @@ def handle_dialog(res, req):
         sessionStorage[user_id]['difficulty'] = difs.index(req['request']['original_utterance'].lower())
         res['response']['text'] = 'Успешно установлен уровень сложности: {}'.format(
             req['request']['original_utterance'].lower())
+
         sessionStorage[user_id]['stage'] = 4
+
         res['response']['buttons'] = [
             {'title': 'Начать тест', 'hide': True},
             {'title': 'Сменить уровень сложности', 'hide': True},
