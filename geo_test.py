@@ -318,8 +318,10 @@ def handle_dialog(res, req):
                 # res['response']['card']['image_id'] = geobjs[sessionStorage[user_id]['difficulty']][correct]
 
             except Exception as e:
+                logging.error(str(e) + 'in start testing')
                 traceback.print_exc()
-                res['response']['text'] = str(e)
+                # res['response']['text'] = str(e)
+                res['response']['text'] = 'Что-то пошло не так :('
             return
 
         # Если пользователь хочет сменить уровень сложности
