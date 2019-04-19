@@ -26,12 +26,12 @@ difs = ["легко", "средне", "сложно"]
 # Загрузка объектов из файла
 def load_geo():
     path = os.path.join(os.getcwd(), 'Samples', 'geodata.dat')
-    f = open(path, mode='r')
-    dat = f.read()
+    # f = open(path, mode='r')
+    # dat = f.read()
     geo = [
-        {'Москва': "965417/7b6365f3876c1291d491"},
-        {'Москва': "965417/7b6365f3876c1291d491"},
-        {'Москва': "965417/7b6365f3876c1291d491"}
+        {'москва': "965417/7b6365f3876c1291d491"},
+        {'москва': "965417/7b6365f3876c1291d491"},
+        {'москва': "965417/7b6365f3876c1291d491"}
     ]
     return geo
 
@@ -124,11 +124,21 @@ def handle_dialog(res, req):
                 geobjs,
                 sessionStorage[user_id]
             )
-
-            res = display(res, sessionStorage[user_id])
-            sessionStorage[user_id]['stage'] = 3
-            sessionStorage[user_id]['ticks'] += 1
-            return
+            if sessionStorage[user_id]['correct'] is not None:
+                res = display(res, sessionStorage[user_id])
+                sessionStorage[user_id]['stage'] = 3
+                sessionStorage[user_id]['ticks'] += 1
+                return
+            else:
+                res['response']['text'] = 'У меня закончились тесты :(, попробуйте сменить уровень сложности'
+                sessionStorage[user_id]['stage'] = 4
+                sessionStorage[user_id]['ingame'] = False
+                res['response']['buttons'] = [
+                    {'title': 'Начать тест', 'hide': True},
+                    {'title': 'Сменить уровень сложности', 'hide': True},
+                    {'title': 'Показать свои результаты', 'hide': True}
+                ]
+                return
 
         # Если пользователь должен отгадывать
         if sessionStorage[user_id]['stage'] == 3:
@@ -147,8 +157,20 @@ def handle_dialog(res, req):
                     geobjs,
                     sessionStorage[user_id]
                 )
-                sessionStorage[user_id]['stage'] = 3
-                return
+                if sessionStorage[user_id]['correct'] is not None:
+                    res = display(res, sessionStorage[user_id])
+                    sessionStorage[user_id]['stage'] = 3
+                    return
+                else:
+                    res['response']['text'] = 'У меня закончились тесты :(, попробуйте сменить уровень сложности'
+                    sessionStorage[user_id]['stage'] = 4
+                    sessionStorage[user_id]['ingame'] = False
+                    res['response']['buttons'] = [
+                        {'title': 'Начать тест', 'hide': True},
+                        {'title': 'Сменить уровень сложности', 'hide': True},
+                        {'title': 'Показать свои результаты', 'hide': True}
+                    ]
+                    return
 
             # Если пользователь хочет снова увидеть картинку объекта
             if 'показать' in req['request']['original_utterance'].lower():
@@ -168,13 +190,26 @@ def handle_dialog(res, req):
                     difs[sessionStorage[user_id]['difficulty']]
                 )
                 sessionStorage[user_id]['ticks'] -= 1
-                sessionStorage[user_id]['stage'] = 3
+
                 sessionStorage[user_id]['correct'], sessionStorage[user_id]['image_id'] = get_obj(
                     geobjs,
                     sessionStorage[user_id]
                 )
-                res = display(res, sessionStorage[user_id])
-                return
+                if sessionStorage[user_id]['correct'] is not None:
+                    res = display(res, sessionStorage[user_id])
+                    sessionStorage[user_id]['stage'] = 3
+                    sessionStorage[user_id]['ticks'] += 1
+                    return
+                else:
+                    res['response']['text'] = 'У меня закончились тесты :(, попробуйте сменить уровень сложности'
+                    sessionStorage[user_id]['stage'] = 4
+                    sessionStorage[user_id]['ingame'] = False
+                    res['response']['buttons'] = [
+                        {'title': 'Начать тест', 'hide': True},
+                        {'title': 'Сменить уровень сложности', 'hide': True},
+                        {'title': 'Показать свои результаты', 'hide': True}
+                    ]
+                    return
 
             # Если пользователь хочет приостановить тест
             if req['request']['original_utterance'].lower() in [
@@ -190,6 +225,7 @@ def handle_dialog(res, req):
                     {'title': 'Сменить уровень сложности', 'hide': True},
                     {'title': 'Показать свои результаты', 'hide': True}
                 ]
+                res['response']['text'] = 'Тест приостановлен'
                 return
 
             # Если ответ правильный, то продолжаем тест
@@ -202,8 +238,19 @@ def handle_dialog(res, req):
                     geobjs,
                     sessionStorage[user_id]
                 )
-                res = display(res, sessionStorage[user_id])
-                return
+                if sessionStorage[user_id]['correct'] is not None:
+                    res = display(res, sessionStorage[user_id])
+                    return
+                else:
+                    res['response']['text'] = 'У меня закончились тесты :(, попробуйте сменить уровень сложности'
+                    sessionStorage[user_id]['stage'] = 4
+                    sessionStorage[user_id]['ingame'] = False
+                    res['response']['buttons'] = [
+                        {'title': 'Начать тест', 'hide': True},
+                        {'title': 'Сменить уровень сложности', 'hide': True},
+                        {'title': 'Показать свои результаты', 'hide': True}
+                    ]
+                    return
 
             else:
                 res['response']['text'] = \
@@ -239,6 +286,7 @@ def handle_dialog(res, req):
             'моя статистика',
             'показать свои результаты'
         ]:
+            print('keko', get_stats(sessionStorage[user_id]))
             res['response']['text'] = get_stats(sessionStorage[user_id])
             return
 
@@ -255,13 +303,20 @@ def handle_dialog(res, req):
                     geobjs,
                     sessionStorage[user_id]
                 )
-                res = display(res, sessionStorage[user_id])
+                if sessionStorage[user_id]['correct'] is not None:
+                    res = display(res, sessionStorage[user_id])
+                    sessionStorage[user_id]['stage'] = 3
+                    sessionStorage[user_id]['ticks'] += 1
+                    sessionStorage[user_id]['ingame'] = True
+                    return
+                else:
+                    res['response']['text'] = 'У меня закончились тесты :(, попроюуйте сменить уровень сложности'
+                    sessionStorage[user_id]['stage'] = 4
+                    sessionStorage[user_id]['ingame'] = False
+                    return
                 # res['response']['card']['type'] = 'BigImage'
                 # res['response']['card']['image_id'] = geobjs[sessionStorage[user_id]['difficulty']][correct]
 
-                sessionStorage[user_id]['stage'] = 3
-                sessionStorage[user_id]['ticks'] += 1
-                sessionStorage[user_id]['ingame'] = True
             except Exception as e:
                 traceback.print_exc()
                 res['response']['text'] = str(e)
@@ -287,15 +342,21 @@ def handle_dialog(res, req):
             sessionStorage[user_id]['stage'] = 4
             return
 
+        # Если польхователь не ввел команду
+        res['response']['text'] = 'Не могу распознать команду'
+        return
+
 
 # Получение результатов пользователя
 def get_stats(userStorage):
+    if userStorage['ticks'] == 0:
+        perc = '0.0'
+    else:
+        perc = str(round(userStorage['good_ans'] * 100 / userStorage['ticks'], 3))
     return '''Ваши результаты:
-                Всего вопросов: {}
-                Правильных ответов: {}
-                Процент выполнения: {}
-    '''.format(str(userStorage['ticks']), str(userStorage['good_ans']),
-               str(round(userStorage['good_ans'] * 100 / userStorage['ticks'], 3)))
+    Всего вопросов: {}
+    Правильных ответов: {}
+    Процент выполнения: {}%'''.format(str(userStorage['ticks']), str(userStorage['good_ans']), perc)
 
 
 '''# Формирования вопроса теста
@@ -317,22 +378,21 @@ def display(res, userStorage):
     res['response']['card'] = {
         'type': 'BigImage',
         'image_id': userStorage['image_id'],
-        'title': userStorage['ticks']
+        'title': 'Вопрос №{} \n Введите название города'.format(userStorage['ticks'] + 1)
     }
     return res
 
 
 # Формирование новой картинки теста
 def get_obj(obj_list, userStorage):
-    corr = choice(list(geobjs[userStorage['difficulty']].keys()))
+    all = set(geobjs[userStorage['difficulty']].keys())
+    shown = set(userStorage['shown'])
+    try:
+        corr = choice(list(all.difference(shown)))
+    except:
+        return None, None
+    userStorage['shown'].append(corr)
     image_id = geobjs[userStorage['difficulty']][corr]
-
-    while image_id in userStorage['shown']:
-        corr = choice(list(geobjs[userStorage['difficulty']].keys()))
-        image_id = geobjs[userStorage['difficulty']][corr]
-
-    userStorage['shown'].append(image_id)
-
     return corr, image_id
 
 
