@@ -390,12 +390,12 @@ def get_obj(obj_list, userStorage):
     all = set(geobjs[userStorage['difficulty']].keys())
     shown = set(userStorage['shown'])
     try:
-        corr = choice(list(all.difference(shown))).lower()
+        corr = choice(list(all.difference(shown)))
     except:
         return None, None
     userStorage['shown'].append(corr)
     image_id = geobjs[userStorage['difficulty']][corr]
-    return corr, image_id
+    return corr.lower(), image_id
 
 
 if __name__ == '__main__':
