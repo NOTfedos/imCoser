@@ -25,14 +25,14 @@ difs = ["легко", "средне", "сложно"]
 
 # Загрузка объектов из файла
 def load_geo():
-    path = os.path.join(os.getcwd(), 'Samples', 'geodata.dat')
-    # f = open(path, mode='r')
+    f = open('Samples/geobjs.json', mode='r')
     # dat = f.read()
-    geo = [
+    '''geo = [
         {'москва': "965417/7b6365f3876c1291d491"},
         {'москва': "965417/7b6365f3876c1291d491"},
         {'москва': "965417/7b6365f3876c1291d491"}
-    ]
+    ]'''
+    geo = json.load(f)
     return geo
 
 
@@ -380,7 +380,7 @@ def display(res, userStorage):
     res['response']['card'] = {
         'type': 'BigImage',
         'image_id': userStorage['image_id'],
-        'title': 'Вопрос №{} \n Введите название города'.format(userStorage['ticks'] + 1)
+        'title': 'Вопрос №{} \n Введите название объекта'.format(userStorage['ticks'] + 1)
     }
     return res
 
@@ -390,7 +390,7 @@ def get_obj(obj_list, userStorage):
     all = set(geobjs[userStorage['difficulty']].keys())
     shown = set(userStorage['shown'])
     try:
-        corr = choice(list(all.difference(shown)))
+        corr = choice(list(all.difference(shown))).lower()
     except:
         return None, None
     userStorage['shown'].append(corr)
