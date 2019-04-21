@@ -53,6 +53,8 @@ def main():
         handle_dialog(response, request.json)
     except Exception as e:
         traceback.print_exc()
+        res['response']['text'] = 'Ой, что-то пошло не так :('
+        logging.error(str(e))
     logging.info('Request: %r', response)
     return json.dumps(response)
 
@@ -86,6 +88,20 @@ def handle_dialog(res, req):
             'shown': []
         }
 
+        return
+
+    # Если пользователю нужна помощь
+    if req['request']['original_utterance'].lower() in [
+        'помощь',
+        'что ты умеешь?',
+        'что ты умеешь'
+    ]:
+        res['response']['buttons'] = [
+            {'title': 'Начать тест'},
+            {'title': 'Сменить уровень сложности'}
+        ]
+        res['response']['text'] = 'Я могу протестировать Вас по географии.\n' \
+                                  'Для этого выберите уровень сложности этого теста и начинайте отвечать!\n'
         return
 
     # Если пользователь выбирает уровень сложности
@@ -151,7 +167,7 @@ def handle_dialog(res, req):
                 res['response']['buttons'] = [
                     {'title': 'Пропустить', 'hide': True},
                     {'title': 'Показать еще раз', 'hide': True},
-                    {'title': 'пауза', 'hide': True}
+                    {'title': 'Пауза', 'hide': True}
                 ]
                 sessionStorage[user_id]['correct'], sessionStorage[user_id]['image_id'] = get_obj(
                     geobjs,
@@ -175,7 +191,9 @@ def handle_dialog(res, req):
 
             # Если пользователь хочет снова увидеть картинку объекта
             if 'показать' in req['request']['original_utterance'].lower():
+                sessionStorage[user_id]['ticks'] -= 1
                 res = display(res, sessionStorage[user_id])
+                sessionStorage[user_id]['ticks'] += 1
                 return
 
             # Если пользователь хочет сменить уровень сложности
@@ -261,6 +279,7 @@ def handle_dialog(res, req):
                 res['response']['buttons'] = [
                     {'title': 'Пропустить', 'hide': True},
                     {'title': 'Показать еще раз', 'hide': True},
+                    {'title': 'Пауза', 'hide': True}
                 ]
 
                 if sessionStorage[user_id]['difficulty'] == 1:
@@ -288,7 +307,6 @@ def handle_dialog(res, req):
             'моя статистика',
             'показать свои результаты'
         ]:
-            print('keko', get_stats(sessionStorage[user_id]))
             res['response']['text'] = get_stats(sessionStorage[user_id])
             return
 
@@ -356,7 +374,7 @@ def get_stats(userStorage):
     if userStorage['ticks'] == 0:
         perc = '0.0'
     else:
-        perc = str(round(userStorage['good_ans'] * 100 / userStorage['ticks'], 3))
+        perc = str(round(userStorage['good_ans'] * 100 / userStorage['ticks'], 2))
     return '''Ваши результаты:
     Всего вопросов: {}
     Правильных ответов: {}
