@@ -159,6 +159,7 @@ def handle_dialog(res, req):
                 )
                 if sessionStorage[user_id]['correct'] is not None:
                     res = display(res, sessionStorage[user_id])
+                    sessionStorage[user_id]['ticks'] += 1
                     sessionStorage[user_id]['stage'] = 3
                     return
                 else:
@@ -240,6 +241,7 @@ def handle_dialog(res, req):
                 )
                 if sessionStorage[user_id]['correct'] is not None:
                     res = display(res, sessionStorage[user_id])
+                    sessionStorage[user_id]['ticks'] += 1
                     return
                 else:
                     res['response']['text'] = 'У меня закончились тесты :(, попробуйте сменить уровень сложности'
