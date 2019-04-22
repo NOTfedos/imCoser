@@ -330,7 +330,7 @@ def handle_dialog(res, req):
                     sessionStorage[user_id]['ingame'] = True
                     return
                 else:
-                    res['response']['text'] = 'У меня закончились тесты :(, попроюуйте сменить уровень сложности'
+                    res['response']['text'] = 'У меня закончились тесты :(, попробуйте сменить уровень сложности'
                     sessionStorage[user_id]['stage'] = 4
                     sessionStorage[user_id]['ingame'] = False
                     return
